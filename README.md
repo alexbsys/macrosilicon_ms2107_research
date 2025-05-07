@@ -30,7 +30,9 @@ MS2107 EEPROM contains section:
 7. ?? Extended configuration section or code
 
 ### Checksums
+
 EEPROM contains 2 checksums, first for code, second for header, but firmware version field is excluded from checksum calculation.
+
 Type of checksums is simple **uint16**, just sum of bytes:
 
 ```
@@ -40,87 +42,32 @@ code_checksum = sum(0x30:0x30+code_size)
 
 ### Details
 
-bytes 0x00 0x01 - signature 08 16
-bytes 0x02 0x03 - program code length, started on 0x30
-
-bytes 0x04 0x05 - USB VID (big endian, first byte is hi-byte, second lo-byte). 0xFFFF - default
-bytes 0x05 0x06 - USB PID (big endian, first byte is hi-byte, second lo-byte). 0xFFFF - default
-
-byte  0x08 - Common flags
-
-common flags:
-bit 0 - Patch_Common
-bit 1 - USB_cmd
-bit 2 - USB_int
-bit 3 - Timer_Int
-bit 4 - VSync_int
-bit 5 - TVD_int
-bit 6 - Reserved
-bit 7 - Reserved
-
-byte 0x09 - Function flag 1 (in my case 0xFF by default)
-bit 0 - AV port enabled
-bit 1 - SV port enabled
-other bits: 1
-
-byte 0x0A:
-  H 4bit           L 4bit
-[mute partern] [functions 2 enabled]
-
-mute patterns:
-0 - pure black
-1 - pure blue
-2 - pure green
-3 - pure red
-4 - pure white
-5 - cross hatch
-6 - H ramp
-7 - V ramp
-8 - color bar
-9 - H gray scale
-A - V gray scale
-B - 2nd H gray scale
-C - primary color 
-D - interlace black 
-E - B&W random
-F - color random
-
-functions enabled
-bit 0 (1) - audio enable
-bit 1 (2) - stereo enabled
-bit 3 (4) - save Brightness/Contrast/Saturation/Hue (4-byte signed int8 config block after checksums)
-
-byte 0x0B:
-  H 1bit           L 7bit
-[default port] [default TV mode]
-
-default port:
-0 - AV
-1 - SV  
-
-default TV mode:
-0 - NTSC 358
-1 - NTSC 443 
-2 - PAL
-3 - PAL M
-4 - PAL NC
-5 - SECAM
-6 - PAL 60
-0x7F - NO SIGNAL
-
-bytes 0x0C-0x0F - firmware version (not used in CRC calculation)
-
-byte 0x10 - USB Video name length. 0xFF - no name
-byte 0x11-0x1F - 'USB Video' device name. End bytes 0xFF, default should be 0xFF all
-
-byte 0x20 - USB Audio name length. 0xFF - no name
-byte 0x21-0x2F - 'USB Audio' device name. End bytes 0xFF, default should be 0xFF all
+| Byte address<br>Offset from start | Len<br>bytes | Default value   | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+|-----------------------------------|--------------|-----------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 0x00 0x01                         | 2            | 0x08 0x16       | EEPROM image signature                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| 0x02 0x03                         | 2            | my case: 0x00E9 | **Program code length** (N), it started from byte 0x30 in EEPROM.<br>Code length can be 0                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| 0x04 0x05                         | 2            | 0xFFFF          | **USB VID** *(big endian, first byte is hi-byte, second lo-byte)*<br>When default value is specified, chip uses 0x534D                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| 0x05 0x06                         | 2            | 0xFFFF          | **USB PID** *(big endian, first byte is hi-byte, second lo-byte)*<br>When default value is specified, chip used 0x0021                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| 0x08                              | 1            | my case: 0x03   | **Common flags**<br>bit 0 - Patch_Common<br>bit 1 - USB_cmd<br>bit 2 - USB_int<br>bit 3 - Timer_Int<br>bit 4 - VSync_int<br>bit 5 - TVD_int<br>bit 6 - Reserved<br>bit 7 - Reserved                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| 0x09                              | 1            | my case: 0xFF   | **Function flag 1**<br>bit 0 - AV port enabled (1-enabled, 0-disabled)<br>bit 1 - SV port enabled (1-enabled, 0-disabled)<br>other bits: 1                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| 0x0A                              | 1            | my case: 0x01   | **Mute pattern (high 4 bits) and Function flag 2 (low 4 bits)**<br><br>   H 4bit             L 4bit<br>[mute partern] [functions 2 enabled]<br><br>**Mute patterns values**<br>0x0 - pure black<br>0x1 - pure blue<br>0x2 - pure green<br>0x3 - pure red<br>0x4 - pure white<br>0x5 - cross hatch<br>0x6 - H ramp<br>0x7 - V ramp<br>0x8 - color bar<br>0x9 - H gray scale<br>0xA - V gray scale<br>0xB - 2nd H gray scale<br>0xC - primary color <br>0xD - interlace black <br>0xE - B&W random<br>0xF - color random<br><br>**Functions 2 flag bits**<br>bit 0 (0x01) - audio enable<br>bit 1 (0x02) - stereo enabled<br>bit 3 (0x04) - save Brightness/Contrast/Saturation/Hue <br>            (4-byte signed int8 config block after checksums) |
+| 0x0B                              | 1            |                 | **Default port (high bit) and default TV mode (low 7 bits) selector**<br><br>   H 1bit           L 7bit<br>[default port] [default TV mode]<br><br>**Default port**<br>0 - AV<br>1 - SV  <br><br>**Default TV mode**<br>0x00 - NTSC 358<br>0x01 - NTSC 443 <br>0x02 - PAL<br>0x03 - PAL M<br>0x04 - PAL NC<br>0x05 - SECAM<br>0x06 - PAL 60<br>0x7F - NO SIGNAL                                                                                                                                                                                                                                                                                                                                                                                     |
+| 0x0C-0x0F                         | 4            |                 | Firmware version (not used in CRC calculation)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| 0x10                              | 1            | 0x0A            | USB Video device name length. 0xFF - no specified name                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| 0x11-0x1F                         | 15           | "USB Video"     | 'USB Video' device name. Bytes after text contain 0xFF.<br>If no name specified, all field should contain 0xFF                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| 0x20                              | 1            | 0x0A            | USB Audio device name length. 0xFF - no specified name                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| 0x21-0x2F                         | 15           | "USB Audio"     | 'USB Audio' device name. Bytes after text contain 0xFF.<br>If no name specified, all field should contain 0xFF                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| 0x30-(0x30+N)                     | N            |                 | Code section                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| (0x30+N)                          | 2            |                 | Code checksum                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| (0x30+N)+2                        | 2            |                 | Header checksum (excludes firmware version field)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| (0x30+N)+4                        | ?            |                 | **Extended configuration section** <br>It contains BCSH values if enabled in Functions 2 flag.<br>Some additional data or code may be included                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 
 
 ## Fix checksums after EEPROM modifications
 
-I wrote simple python script for verify and recalculate checksums for MS2107 EEPROM images, it placed in *eeprom_checksum_tool* directory.
-How to use script `test_fix_checksum.py`
+I wrote simple python script for verify and recalculate checksums for *MS2107* EEPROM images, it placed in `eeprom_checksum_tool` directory.
+
+**How to use script `test_fix_checksum.py`**
 
 1. Create file `eeprom.bin` with binary data from EEPROM and place it into directory with `test_fix_checksum.py`
 2. Open terminal or cmd, change directory to `{PROJECT_DIR}/eeprom_checksum_tool`
