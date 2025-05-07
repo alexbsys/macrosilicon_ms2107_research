@@ -15,6 +15,8 @@ https://github.com/anarcheuz/8051-disassembler.git
 ms-tools: research and modifications for MS2106 MS2109 MS2130 chips
 https://github.com/BertoldVdb/ms-tools.git
 
+MS2107 datasheet
+https://item.szlcsc.com/datasheet/MS2107/44259544.html
 
 ## EEPROM data structure
 
